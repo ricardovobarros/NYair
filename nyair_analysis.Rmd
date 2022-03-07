@@ -1,0 +1,722 @@
+---
+title: "NYair analysis"
+author: "Ricardo Barros"
+date: "2/24/2022"
+output: html_document
+---
+```{r libraries, echo=FALSE, include=FALSE}
+library(readr)
+library(data.table)
+library(ggplot2)
+library(dplyr)
+library(stringr)
+library(gridExtra)
+library(scales)
+library(corrplot)
+library(pivottabler)
+library(tidyr)
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+The report aims to analyse the four pollutants observations made by 25 air quality monitors that are scattered across New Your city. The measurements were made betwenn 01-01-1990 and 31-12-2019, and the pollutants analysed here are:
+
+  + Carbon monoxide (CO) [ppm] 
+  + Sulfur dioxide (SO2) [ppb]
+  + Ozone (O3) [ppm]
+  + Nitrogen dioxide (NO2) [ppb]
+  
+ppm: parts per million 
+ppb: parts per billion
+  
+Data source: [NOAA Historical Air Quality](https://console.cloud.google.com/marketplace/product/epa/historical-air-quality?project=fiery-webbing-340301)
+
+See also [sql_code](https://github.com/ricardovobarros/NYair) file to see how the database was queried.
+
+
+
+## Data Processing
+####Looking into the first row:
+
+
+```{r cars, echo=FALSE}
+data = data.frame(read_csv("ny_pollutants.csv",  show_col_types = FALSE))
+head(data)
+```
+#### What is the sampling time period?
+```{r, echo=FALSE}
+data %>% 
+
+# find min and max
+summarise(min = min(date_local),
+          max = max(date_local))
+```
+
+#### How many measurements were made and what are their time period?
+
+```{r, echo=FALSE}
+samples_fr = data.frame()
+
+for (column in unique(data$parameter_name)) {
+ temp_df = data %>% filter(parameter_name == column)
+ observations = count(temp_df, parameter_name)[1,2] 
+ temp_df = temp_df[,c("parameter_name", "date_local")]
+ period = paste(min(temp_df$date_local),max(temp_df$date_local),sep=" to ")
+ temp_df = temp_df %>% summarise(parameter = column,
+                                 period = period ,
+                                 observations = observations)
+ samples_fr = rbind(samples_fr, temp_df)
+}
+print(samples_fr)
+
+# change parameters names☺
+data["parameter_name"][data["parameter_name"] == "Nitrogen dioxide (NO2)"] = "Nitrogen dioxide [ppb]"
+data["parameter_name"][data["parameter_name"] == "Carbon monoxide"] = "Carbon monoxide [ppm]"
+data["parameter_name"][data["parameter_name"] == "Ozone"] = "Ozone [ppm]"
+data["parameter_name"][data["parameter_name"] == "Sulfur dioxide"] = "Sulfur dioxide [ppb]"
+data["parameter_name"][data["parameter_name"] == "Outdoor Temperature"] = "Outdoor Temperature[°F]"
+
+```
+```{r, echo=FALSE, include=FALSE}
+# group duplicated data 
+data = data %>%  group_by(site_num,date_local,parameter_name,latitude,longitude)  %>% summarise(concentration = mean(concentration)) 
+
+# remove space on the site id
+
+data$site_num = trimws(data$site_num, which = c("right"))
+
+
+```
+
+#### What is the average number of observations between 1990 and 2019?
+
++ On average, Carbon Dioxide had the large number of observations.
+
+
+```{r, echo=FALSE}
+data %>% group_by(parameter_name, date_local) %>% count(parameter_name) %>% group_by(parameter_name) %>% summarise(mean=mean(n))
+
+```
+#### How frequent were the measurements throughout the years?
+
++ CO and SO2 had approximately 2500 observation per year until around the year 2000, when the total number of observations drop to around 1000.
++ O3 observations kept almost constant over the year (around 1500 observations per year) with a peak between 1999 and 2001.
+
+
+```{r, echo=FALSE, include=FALSE}
+# average the measurements within the same day.
+df = data %>% filter(parameter_name != "Outdoor Temperature[°F]") 
+
+df_year = df
+
+# add year to group data
+df_year$year = format(as.Date(df_year$date_local, format="%d/%m/%Y"),"%Y")
+
+```
+
+```{r, echo=FALSE}
+# plot histograms
+ggplot(df_year, aes(year,fill=parameter_name)) + geom_bar()+ facet_wrap(~parameter_name) + guides(x= guide_axis(angle = 90)) + labs(fill = "", title = "Observations totals over the years") + theme(axis.text.x = element_text(size=8), legend.position ="top")
+
+
+```
+
+
+## Data Analysis
+
+#### How the concentration of pollutants evolve over time?
+
++ The trend of all pollutants, but ozone, seams to decrease over time.
++ Specially Sulfur dioxide (SO2) and Ozone (O3) present  regular oscillation peaks and valleys.   
+ 
+```{r, echo=FALSE}
+ggplot(data = df, aes(y = concentration, x=date_local, color = parameter_name), size=0.01) +
+  geom_point() +
+  geom_smooth(method = "gam", color="black", formula = y ~ s(x, bs = "cs")) +
+  facet_wrap(~parameter_name,  scales = "free_y")
+  
+
+```
+
+
+#### Have the peaks and valleys of O3 and SO2 a pattern?
+
++ Looking closely between 2010 and 2016, O3 presents a pattern where peaks occur round the middle of the year and valleys around the turning of the years __(Figure A)__.
++ __Figure B__ shows the frequency distribution of the months that presented mean concentration over 0.04 ppm of O3 (black line in __Figure A__) within 1990 and 2019. Clearly, monitors measure on average higher concentrations of O3 between April and September.
++ A mirror phenomena occurs when measuring SO3. Within the first and last months, monitors detect a higher concentration of SO3. For instance, __Figure C__ show the weave-pattern of SO3 between 1990 and 1996, and __Figure D__ shows the frequency distribution of the months that have daily average concentration above 30 ppb between 1990 and 2019.
+
+
+```{r,echo=FALSE}
+
+df_year$month = format(as.Date(df_year$date_local, format="%d/%m/%Y"),"%m")
+
+df_year$month = as.integer(df_year$month)
+
+df_ozone = df_year %>% filter(parameter_name == "Ozone [ppm]")
+
+df_so2 = df_year %>% filter(parameter_name == "Sulfur dioxide [ppb]")
+
+plot1 = ggplot(filter(df_ozone, year >= 2010, year <=2015), aes(x = date_local, y= concentration),  ) + geom_point(color="cyan3") + geom_hline(aes(yintercept= 0.04), color="black") + labs(y="O3 ppm",x="date") + annotate(geom="text", x=as.Date("2010-01-01"), y=0.07, label="A)") 
+
+plot2 = ggplot(filter(df_ozone, concentration >=0.04), aes(x=month)) + geom_bar() +
+scale_x_continuous(breaks= pretty_breaks()) +  annotate(geom="text", x=10.5, y=1500, label="period:1990-2019")  + annotate(geom="text", x=0.5, y=1500, label="B)") 
+
+plot3 = ggplot(filter(df_so2, year >= 1990, year <=1995), aes(x = date_local, y= concentration),  ) + geom_point(color="chartreuse4") + geom_hline(aes(yintercept= 30), color="black") +labs(y="SO2 ppb",x="date") + annotate(geom="text", x=as.Date("1990-01-01"), y=75, label="C)") 
+
+plot4 = ggplot(filter(df_so2, concentration >=30), aes(x=month)) + geom_bar() +
+scale_x_continuous(breaks= pretty_breaks()) +  annotate(geom="text", x=7, y=450, label="period:1990-2019") + annotate(geom="text", x=0.5, y=475, label="D)") 
+
+
+
+grid.arrange(plot1,plot2,plot3,plot4,ncol=2, top = "O3 and SO2 concentration patterns")
+
+```
+
+#### What is the linear correlation among the parameters between 1990 and 2019?
+
++ CO, SO2 and NO2 have a strong correlation among themselves. That may indicate that these tree pollutants share common sources. 
++ Ozone (O3) and temperature also present strong correlation. It is common knowledge that ozone is unstable substance on atmosphere pressure and high temperatures. Thus, one could expect that O3 and temperature have negative correlation, if the source of ozone were constant over the years. However, the positive correlation of 0.6 indicates the temperature is positive correlated with the amount of O3 released on New York proximity.
+
+```{r, echo=FALSE, include=FALSE}
+# summarize table with variables
+df_wide = data[,c("parameter_name", "date_local", "concentration")] %>% group_by(parameter_name, date_local) %>%  summarise(mean_c = mean(concentration))
+
+# transform the parameters into columns
+df_wide = df_wide %>%  pivot_wider(names_from=parameter_name, values_from = mean_c)
+
+# from samples that does not have outdoor temperature
+df_wide = df_wide %>% drop_na()
+
+# remove date columns 
+df_wide = df_wide %>% subset(select=-date_local)
+```
+
+```{r, echo=FALSE}
+# mat : is a matrix of data
+# ... : further arguments to pass to the native R cor.test function
+cor.mtest <- function(mat, ...) {
+    mat <- as.matrix(mat)
+    n <- ncol(mat)
+    p.mat<- matrix(NA, n, n)
+    diag(p.mat) <- 0
+    for (i in 1:(n - 1)) {
+        for (j in (i + 1):n) {
+            tmp <- cor.test(mat[, i], mat[, j], ...)
+            p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+        }
+    }
+  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+  p.mat
+}
+# matrix of the p-value of the correlation
+p.mat <- cor.mtest(df_wide)
+
+# plot correlation among parameters
+col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+corrplot(cor(df_wide), method="color", col=col(200),  
+         type="upper", order="hclust", 
+         addCoef.col = "black", # Add coefficient of correlation
+         tl.col="black", tl.srt=15, #Text label color and rotation
+         # Combine with significance (p-value>0.01 are not displayed)
+         p.mat = p.mat, sig.level = .01, insig = "blank", 
+         # hide correlation coefficient on the principal diagonal
+         diag=FALSE,
+         title= "Parameter Correlation with significance p-value <= .01",
+          mar=c(0,0,1,0)
+         ) 
+```
+
+```{r, echo=FALSE, include=FALSE}
+options(warn=-1)
+# group mean concentration by month
+df_site = df_year %>% subset(select=-c(date_local,latitude,longitude)) %>% group_by(parameter_name, site_num, year, month) %>% summarise(conc=mean(concentration))
+
+# remove month column and group mean concentration by year
+df_site = df_site %>% subset(select=-c(month))
+df_site = df_site %>% group_by(parameter_name, site_num, year) %>% summarise(conc_mean= mean(conc), conc_std=sd(conc))
+
+# give neighborhood name to the sites
+give_sites_name <- function(df_site) {
+  return(df_site %>% mutate(
+    neighborhood = case_when(
+      site_num == "0133" ~ "Bronx Park",
+      site_num == "0083" ~ "Bronx Park",
+      site_num == "0135" ~ "Harlem",
+      site_num == "0073" ~ "Mott Haven",
+      site_num == "0110" ~ "Longwood",
+      site_num == "0081" ~ "Midtown",
+      site_num == "0082" ~ "Midtown",
+      site_num == "0056" ~ "Midtown",
+      site_num == "0092" ~ "Murray Hill",
+      site_num == "0010" ~ "Flatiron District",
+      site_num == "0062" ~ "Tribeca",
+      site_num == "0063" ~ "Financial District",
+      site_num == "0071" ~ "Downtown Brooklyn",
+      site_num == "0076" ~ "Park Slope",
+      site_num == "0007" ~ "Gerritsen Beach",
+      site_num == "0067" ~ "Latourette Park",
+      site_num == "0111" ~ "Freshkills Park",
+      site_num == "0011" ~ "Green Park",
+      site_num == "0054" ~ "Long Island City",
+      site_num == "0098" ~ "College Point",
+      site_num == "0097" ~ "Bay side",
+      site_num == "0125" ~ "Flushing",
+      site_num == "0004" ~ "Flushing",
+      site_num == "0124" ~ "Flushing",
+      site_num == "0080" ~ "Concourse",
+      TRUE ~ "other"
+    )
+  ))
+}
+df_site = give_sites_name(df_site)
+
+#list of all sites
+sites = unique(df_site$site_num)
+
+# print average trend and local trend of the pollutants in each site
+# OZONE
+plot_list_ozone = list()
+for (site in sites) {
+
+  if (dim(filter(df_site, parameter_name == "Ozone [ppm]", site_num == site))[1] !=
+      0) {
+    plot_ozone = ggplot(
+      filter(df_site, parameter_name == "Ozone [ppm]", site_num == site),
+      aes(x = year, y = conc_mean, group = 1)) + geom_point()   + geom_line(col = "red", size = 0.7, aes(colour="haha")) + geom_errorbar(aes(ymax = conc_mean +
+                                                                                   conc_std, ymin = conc_mean - conc_std)) + geom_smooth(method= "loess",formula = y~x , data = filter(df_site, parameter_name ==
+                                                                                                                                                         "Ozone [ppm]"), aes(colour = "City Average"))  + ylim(0, 0.05) + guides(x = guide_axis(angle = 90)) + theme(axis.text = element_text(size = 7.5), legend.position = c(0.75,0.1), legend.direction = "horizontal" )  + annotate(geom="text", x="2010", y=0.045,
+                                                        label =  df_site$neighborhood[match(site,df_site$site_num)])  + scale_colour_manual(name="", values=c("blue")) + labs(y="O3 [ppm]", title = "O3 Yearly Averages and Std")
+    # save pot in a list
+    plot_list_ozone = c(plot_list_ozone, list(plot_ozone))
+    
+    # save image
+    ggsave(paste0("img/ozone/", site, "_ozone.png"),
+            dpi = 100,
+            width = 6,
+            height = 5,
+            units = "in",
+            scale = 0.5
+           )
+  }}
+  
+# CARBON DIOXIDE
+plot_list_co = list()
+for(site in sites) {
+  if (dim(filter( df_site,parameter_name == "Carbon monoxide [ppm]",site_num == site
+  ))[1] != 0) {
+    
+    plot_co = ggplot(filter(df_site,parameter_name == "Carbon monoxide [ppm]",
+                            site_num == site
+                                    )
+                            ,aes(x = year, y = conc_mean, group = 1)
+                    )+
+                      
+    geom_point() +
+    geom_line(color = "red", size = 0.7) +
+    geom_errorbar(aes(ymax = conc_mean + conc_std, ymin = conc_mean - conc_std))+
+    geom_smooth(method= "loess",formula = y~x,
+                data = filter(df_site, parameter_name ==  "Carbon monoxide [ppm]"),
+                aes(colour="City average")
+                )+
+    ylim(0, 5) + guides(x = guide_axis(angle = 90))+
+    theme(axis.text = element_text(size = 7.5),
+          legend.position = c(0.7,0.6),
+          legend.direction = "horizontal"
+          ) +
+    annotate(geom="text", x="2010", y=4.5,
+             label =  df_site$neighborhood[match(site,df_site$site_num)]
+             )+
+    scale_colour_manual(name="", values=c("blue"))+
+    labs(y="CO [ppm]", title = "CO Yearly Averages and Std")  
+    
+    #save plot in a list
+    plot_list_co = c(plot_list_co, list(plot_co))
+    # save image
+    ggsave(
+      paste("img/co/", site, "_co.jpeg", sep = ""),
+      dpi = 100,
+      width = 6,
+      height = 5,
+      units = "in",
+      scale = 0.5
+    )
+  }
+}
+
+# SULFUR DIOXIDE
+plot_list_so2 = list()
+df_so2 = na.omit(filter(df_site,
+                        parameter_name ==  "Sulfur dioxide [ppb]",
+                        site_num !="0054"))
+for(site in sites) {
+  if (dim(filter(df_so2,site_num == site))[1] != 0) {
+    
+    plot_so2 = ggplot(filter(df_so2,
+                            site_num == site
+                            ),aes(x = year, y = conc_mean, group = 1
+                                  )
+                     ) + 
+    geom_point() +
+    geom_line(color = "red", size = 0.7) +
+    geom_errorbar(aes(ymax = conc_mean + conc_std, ymin = conc_mean - conc_std))+
+    geom_smooth(method= "loess",formula = y~x,
+                data = df_so2,
+                aes(colour="City average")
+                )+
+    ylim(0, 27) +
+    guides(x = guide_axis(angle = 90))+
+    theme(axis.text = element_text(size = 7.5),
+          legend.position = c(0.75,0.76),
+          legend.direction = "horizontal"
+          ) +
+    annotate(geom="text", x="2012", y=27,
+             label =  df_site$neighborhood[match(site,df_site$site_num)]
+             )+
+    scale_colour_manual(name="", values=c("blue"))+
+    labs(y="SO2 [ppb]", title = "SO2 Yearly Averages and Std")  
+    
+    #save plot in a list
+    plot_list_so2 = c(plot_list_so2, list(plot_so2))
+    # save image
+    ggsave(
+      paste("img/sulfur/", site, "_so2.jpeg", sep = ""),
+      dpi = 100,
+      width = 6,
+      height = 5,
+      units = "in",
+      scale = 0.5
+    )
+  }
+}
+
+# NITROGEN DIOXIDE
+plot_list_no2 = list()
+df_no2 = na.omit(filter(df_site,
+                        parameter_name ==  "Nitrogen dioxide [ppb]",
+                        site_num !="0073"
+                        )
+)
+
+for(site in sites) {
+  if (dim(filter(df_no2,site_num == site))[1] != 0) {
+    
+    plot_no2 = ggplot(filter(df_no2,
+                            site_num == site
+                            ),
+                      aes(x = year, y = conc_mean, group = 1)
+                     ) + 
+    geom_point() +
+    geom_line(color = "red", size = 0.7) +
+    geom_errorbar(aes(ymax = conc_mean + conc_std, ymin = conc_mean - conc_std))+
+    geom_smooth(method= "loess",formula = y~x,
+                data = df_no2,
+                aes(colour="City average")
+                )+
+    ylim(0, 60) +
+    guides(x = guide_axis(angle = 90))+
+    theme(axis.text = element_text(size = 7.5),
+          legend.position = c(0.25,0.1),
+          legend.direction = "horizontal"
+          ) +
+    annotate(geom="text", x="2012", y=55,
+             label =  df_site$neighborhood[match(site,df_site$site_num)]
+             )+
+    scale_colour_manual(name="", values=c("blue")) +
+    labs(y="NO2 [ppb]", title = "NO2 Yearly Averages and Std")  
+    
+    #save plot in a list
+    plot_list_no2 = c(plot_list_no2, list(plot_no2))
+    # save image
+    ggsave(
+      paste("img/nitro/", site, "_no2.jpeg", sep = ""),
+      dpi = 100,
+      width = 6,
+      height = 5,
+      units = "in",
+      scale = 0.5
+    )
+  }
+}
+
+
+```
+
+#### What are the four most relevant Ozone observations and their neighborhood?  
+
++ Neighborhoods Financial District and Latourette Park measure consistently higher concentration of ozone than the city average. 
++ The oposite is observed for the neighborhoods Bronx Park and Flatiron.
+```{r, echo=FALSE}
+options(warn=-1)
+# show the average and std of ozone concentration
+# of four sites again trend of the mean of all sites
+do.call("grid.arrange", c(plot_list_ozone[c(14,15,1,2)], ncol=2, top="O3 Anual Average and Standard Deviation in Four Neighborhoods"))
+```
+#### What are the four most relevant Carbon Monoxide observations and their neighborhood?  
+
++ Neighborhoods Tribeca and Downtown Brooklyn measure slightly higher concentration of CO than the city average. 
++ The oposite is observed for the neighborhoods Midtown and Bronx Park.
+```{r, echo=FALSE}
+options(warn=-1)
+# show the average and std of co concentration
+# of four sites again trend of the mean of all sites
+do.call("grid.arrange", c(plot_list_co[c(3,4,5,9)], ncol=2, top="CO Anual Average and Standard Deviation in Four Neighborhoods"))
+```
+
+
+#### What are the four most relevant Sulfur Dioxide observations and their neighborhood?  
+
++ Neighborhoods Midtown and Flatiron District measure higher concentration of SO2 than the city average no the 90s and part of the 2000s. 
++ The monitor located in Flushing detected consistently lower values than the city average.
++ The monitor located in Longwood detected SO2 concentrations around average. Around the year 2000 SO2 yearly average crosses downwards the city  average.
++ The City Average decreasing trend may be biased because the monitors with historical data from the 90s to middle 2000s are different than the one that have historical data from middle 2000s on wards. However, the trends of monitors separately have a downward trend.  
+```{r, echo=FALSE}
+options(warn=-1)
+# show the average and std of co concentration
+# of four sites again trend of the mean of all sites
+do.call("grid.arrange", c(plot_list_so2[c(2,1,6,11)], ncol=2, top="SO2 Anual Average and Standard Deviation in Four Neighborhoods"))
+```
+
+
+#### What are the four most relevant Nitrogen Dioxide observations and their neighborhood?  
+
++ Midtown monitor measured consistently concentrations of NO2 above the city average. 
++ Contrarily, the monitor by FLushing measured consistently yearly mean concentration below city average. 
++ The monitor located in Bay Side neighborhood has data of only four years. 
+  
+```{r, echo=FALSE}
+# show the average and std of co concentration
+# of four sites again trend of the mean of all sites
+do.call("grid.arrange", c(plot_list_no2[c(2,1,5,4)], ncol=2, top=" NO2 Anual Average and Standard Deviation in Four Neighborhoods"))
+```
+
+
+
+
+
+
+
+## Geospatial Visualization
+#### Air quality monitors across NY
+```{r, echo=FALSE, warning=FALSE}
+options(warn=-1)
+
+library(plotly)
+
+df_sites = data %>% subset(select=-c(concentration, date_local, parameter_name)) %>% group_by(site_num) %>% summarise(lat= mean(latitude),lon= mean(longitude))
+
+fig <- df_sites 
+fig <- fig %>%
+  plot_ly(
+    lat = ~lat,
+    lon = ~lon,
+    marker = list(color = "blue", size=6),
+    type = 'scattermapbox',
+    mode   = 'markers',
+    hovertext = df_sites$site_num) 
+fig <- fig %>%
+  layout(
+    mapbox = list(
+      style = 'open-street-map',
+      zoom =9,
+      center = list(lon = -73.93, lat = 40.81))) %>% 
+  config(displayModeBar = FALSE)
+
+htmlwidgets::saveWidget(fig, "maps/ny_sites.html")
+```
+
+```{r, echo=FALSE}
+fig 
+```
+
+#### CO monitors across New York
+
+```{r, echo=FALSE}
+library(leaflet)
+
+# create data frame with the lat, lon, and pop-up info 
+df_tmp = data %>% filter(parameter_name=="Carbon monoxide [ppm]") %>% subset(select=-c(date_local, parameter_name, concentration)) %>% group_by(site_num) %>% summarise(lat = mean(latitude), lon = mean(longitude))
+
+# new column wiht html img and text
+df_tmp$pop = paste0( "<img src='C:/Users/ricar/nyair/img/co/",
+                            df_tmp$site_num,
+                            "_co.jpeg", "' />"
+                     )
+
+                   
+       
+
+map = leaflet(data=df_tmp) %>%
+  addTiles() %>%
+  setView(-73.93,  40.81, zoom=10) %>%
+  addMarkers(~lon,  ~lat, popup= ~pop)
+
+htmlwidgets::saveWidget(map, "maps/co_analyse.html")
+map
+
+  
+```
+
+#### Relative CO pollution among the neighborhoods of NY between 1990 and 2000
+
+In the map below, the darker the red, the higher the CO average concentration in ppm between 1990 and 2000. Since the majority of the neighborhoods do not have a monitor, their CO concentration are estimated through weighted average of all the other monitors. The weights are function of the distances to the other monitors (Read more here).
+
+The _nearst monitor_ distance, which is displayed together of the estimation and neighborhood name, can be interpreted as a measurement of approximation occur. It is expected that, the closer a neighborhood is from a monitor, the more accurate is the estimation of the reality.
+Looking to the [Choropleth](https://en.wikipedia.org/wiki/Choropleth_map#:~:text=A%20choropleth%20map%20) below, it is possible to conclude:
+
++ Manhattan and proximity have the highest values of CO on average between 1990 and 2000.
++ Neighborhoods near to the cost (most southern) have on average the lowest concentrations of CO.
+
+```{r echo=FALSE, warning=FALSE}
+
+library(geojsonio)
+library(sp)
+library(broom)
+library(geosphere)
+library(plotly)
+library(rjson)
+
+# read geojson 
+spdf <- geojson_read("ny_nei.json",  what = "sp")
+spdf2 = fromJSON(file="ny_nei.json")
+
+# add a id to the polygons
+for(n in 1:310){
+    spdf2$features[[n]][["id"]] = as.character(n)
+}
+
+# get data frame from geojson
+df_ny = spdf@data %>% subset(select=-c(boroughCode, X.id))
+
+# compute mean lon and lat and associate with each neighborhood 
+df_poly = data.frame()
+n_polygonos = length(spdf@polygons)
+for (p_n in 1:n_polygonos){
+poly_mean =  summarise(data.frame(spdf@polygons[[p_n]]@Polygons[[1]]@coords),
+                                   lon_mean = mean(X1),
+                                   lat_mean = mean(X2))[1,]
+#  add new row
+df_poly = rbind(df_poly, poly_mean)
+}
+
+# join dataframe with mean location and mean lon/lat
+df_ny = cbind(df_ny, df_poly)
+
+# create id for each polygon 
+df_ny$id = 1:length(df_ny$borough)
+
+
+# define date interval
+start_time = "1990-01-01"
+end_time = "2000-01-01"
+
+# filter concentration of CO each site in a time period 
+df_time = data %>%   filter(parameter_name == "Carbon monoxide [ppm]") %>%  filter(date_local > start_time) %>% filter (date_local < end_time) %>% subset(select =
+                                                                                                                                                            -c(date_local, parameter_name, latitude, longitude)) %>% group_by(site_num) %>% summarise(conc_mean = mean(concentration))
+
+# com
+
+# compute distance from every site to neighborhoods centers
+n_sites = length(df_sites$site_num)
+n_centers = length(df_ny$id)
+for (j in 1:n_sites) {
+  dist_save = vector()
+  for (k in 1:n_centers) {
+    dist_site = distm(c(df_ny$lon_mean[k], df_ny$lat_mean[k]),
+                   c(df_sites[[j, "lon"]], df_sites[[j, "lat"]]),
+                   fun = distHaversine)
+    dist_save = append(dist_save, dist_site)
+    
+  }
+  col_name = df_sites$site_num[[j]]
+  df_ny = cbind(df_ny, dist_save)
+  df_ny = rename(df_ny, !!col_name := dist_save)
+}
+
+# compute weights  
+compute_weight <- function(d,l=500, dist_limit = 500){
+  return(exp((d/l)*log(0.5, base=exp(1))))
+}
+# second option of function
+compute_weight2 <- function(d, l = 500, dist_limit = 500) {
+  if (d < dist_limit) {
+    return(1)
+  } else{
+    return(exp((d / l) * log(0.5, base = exp(1))))
+  }
+  
+}
+# filter mean co concentration in the time slot
+df_ny_time = df_ny %>% subset(select=c(df_time$site_num))
+
+# compute weight matrix
+weight = compute_weight2(df_ny_time,l=100, dist_limit = 500) # l is 50% weight
+
+# compute concentrations everywhere 
+all_con = data.frame(data.matrix(weight)%*%df_time$conc_mean/rowSums(weight))
+colnames(all_con) = "conc"
+  
+  
+# add ids to all concentrations
+all_con$ID = as.character(1:310)
+
+# create map
+
+# # add monitors
+# map_pol <- plot_ly(df_tmp)
+# map_pol <- map_pol %>%  add_trace(
+#   type = 'scattermapbox',
+#   text = as.character(paste("monitor id:", df_tmp$site_num, sep=" ")),
+#   lat = ~lat,
+#   lon = ~lon,
+#   marker = list(color = "blue")
+# )
+ 
+
+# choroplrth maps 
+nearst = format(round(apply(df_ny_time[,-1], 1, min)/1000, 2), nsmall=2)
+map_pol <- plot_ly()
+map_pol <- map_pol %>% add_trace(
+    text=paste(df_ny$neighborhood,
+               paste0("nearst monitor:", nearst," [km]"),
+               sep="<br>"),
+    type="choroplethmapbox",
+    geojson=spdf2,
+    locations=all_con$ID,
+    z=format(round(all_con$conc, 2), nsmall=2),
+    colorscale= "RdYIGn", #"Viridis",
+    zmin=0,
+    zmax=format(round(max(all_con$conc), 2), nsmall=2),
+    marker=list(line=list(
+      width=0),
+      opacity=0.5
+    )
+  )
+
+# create layout 
+map_pol <- map_pol %>% layout(title = "bababbaba",
+  mapbox = list(
+    style = "carto-positron",
+    title = "NY neighborhhods CO relative concentrarion ",
+    zoom = 9,
+    center = list(lon = -73.9, lat = 40.8)
+  )
+) %>%  config(displayModeBar = F) %>%  colorbar(title = "CO [ppm]")
+
+  
+  
+htmlwidgets::saveWidget(map_pol, "maps/relative_pollution2.html")
+map_pol
+
+```
+
+## Conclusion
+
+
+## Suggestions
+
+
+

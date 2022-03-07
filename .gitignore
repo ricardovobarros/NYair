@@ -2,8 +2,12 @@
 .Rhistory
 .RData
 .Ruserdata
+.RDataTmp
 
 # files and folders to ignore 
 rshiny_freecodecamp-main/
 google_project/
 maps/
+.ipynb_checkpoints/
+nyair.Rproj
+
