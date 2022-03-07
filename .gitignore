@@ -1,0 +1,9 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# files and folders to ignore 
+rshiny_freecodecamp-main/
+google_project/
+maps/
