@@ -1,17 +1,17 @@
 
 
 
-generate_neimap = function(data,...){
-  pollutant = "Carbon monoxide"
-  
+generate_neimap = function(data, date, pollutant,...){
+  # pollutant = "Carbon monoxide"
+  #check paramater names
   print(unique(data$parameter_name))
   
-  # DEFINE THETIME RANGE <-----------------------------------
-  start_time = "1990-01-01"
-  end_time = "2000-01-01"
+  # SET TIME RANGE 
+  start_time = date[1]
+  end_time = date[2]
   
   # filter concentration of CO each site in a time period <--------------------------
-  df_time = data %>%   filter(parameter_name == "Carbon monoxide") %>% 
+  df_time = data %>%   filter(parameter_name == pollutant) %>% 
     filter(date_local > start_time) %>% filter (date_local < end_time) %>%
     subset(select =-c(date_local, parameter_name, latitude, longitude)) %>% 
     group_by(site_num) %>% summarise(conc_mean = mean(concentration))
@@ -105,7 +105,6 @@ generate_neimap = function(data,...){
   # create layout 
   map_pol <-
     map_pol %>% layout(
-      title = "NY neighborhoods CO concentrarion in ppm",
       mapbox = list(
         style = "carto-positron",
         zoom = 9,
@@ -116,7 +115,7 @@ generate_neimap = function(data,...){
   return(map_pol)
 }
 
-# second option of function
+# compute fuzzy weight matrix 
 compute_weight2 <- function(d, l = 500, dist_limit = 500) {
   if (d < dist_limit) {
     return(1)
@@ -124,4 +123,12 @@ compute_weight2 <- function(d, l = 500, dist_limit = 500) {
     return(exp((d / l) * log(0.5, base = exp(1))))
   }
   
+}
+
+parameter_to_key = function(data){
+  data["parameter_name"][data["parameter_name"] == "Nitrogen dioxide (NO2)"] = "no2"
+  data["parameter_name"][data["parameter_name"] == "Carbon monoxide"] = "co"
+  data["parameter_name"][data["parameter_name"] == "Ozone"] = "o3"
+  data["parameter_name"][data["parameter_name"] == "Sulfur dioxide"] = "so2"
+  return(data)
 }

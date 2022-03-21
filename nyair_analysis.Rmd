@@ -73,7 +73,7 @@ for (column in unique(data$parameter_name)) {
 }
 print(samples_fr)
 
-# change parameters names☺
+# change parameters names
 data["parameter_name"][data["parameter_name"] == "Nitrogen dioxide (NO2)"] = "Nitrogen dioxide [ppb]"
 data["parameter_name"][data["parameter_name"] == "Carbon monoxide"] = "Carbon monoxide [ppm]"
 data["parameter_name"][data["parameter_name"] == "Ozone"] = "Ozone [ppm]"

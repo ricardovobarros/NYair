@@ -30,15 +30,20 @@ ui <- fluidPage(theme = bs_theme(bootswatch = "darkly"),
                 navbarPage("NYair",
                            tabPanel("Neighborhood Map",
                                     wellPanel("Input Panel",
-                                              dateRangeInput("datarangenei",
-                                                             "Date Range"
+                                              dateRangeInput("daterangenei",
+                                                             "Date Range",
+                                                             start="1990-01-01",
+                                                             end="2020-01-01",
+                                                             max="2020-01-01",
+                                                             min="1990-01-01",
+                                                             startview = "decade"
                                               ),
-                                              selectInput("poluttantnei",
+                                              selectInput("pollutantnei",
                                                           "Pollutant",
-                                                          c("Carbon Monoxide" = "co",
-                                                            "Ozone" = "o3",
-                                                            "Nitrogen dioxide"= "no2",
-                                                            "Sulfur dioxide" = "so2")
+                                                          c("Carbon Monoxide [ppm]" = "co",
+                                                            "Ozone [ppm]" = "o3",
+                                                            "Nitrogen dioxide [ppb]"= "no2",
+                                                            "Sulfur dioxide [ppb]" = "so2")
                                               ),
                                               actionButton("updatemapnei",
                                                            "Update map"
@@ -61,18 +66,18 @@ server <- function(input, output) {
   
   #generate neimap
   df = reactive({
-    data.frame(read_csv("ny_pollutants.csv",  show_col_types = FALSE))
+    parameter_to_key(data.frame(read_csv("ny_pollutants.csv",
+                                         show_col_types = FALSE)))
   })
-  
-  neimap = reactive({
-    generate_neimap(df())
-  })
-
 
   # generate neighbor map
   output$neimap = renderPlotly({
     if (input$updatemapnei>0) { 
-      isolate(neimap()) 
+      isolate(generate_neimap(df(),
+                              input$daterangenei,
+                              input$pollutantnei
+                              )
+              ) 
     } 
     # generate_neimap(
     #   data,
@@ -84,13 +89,19 @@ server <- function(input, output) {
     })
   
     observeEvent(input$updatemapnei,
-                 print(input$datarangenei)
+                 print(input$daterangenei)
     )
     observeEvent(input$updatemapnei,
-                 print(input$datarangenei[1])
+                 print(input$daterangenei[1])
     )
     observeEvent(input$updatemapnei,
-                 print(input$poluttantnei)
+                 print(input$daterangenei[2])
+    )
+    observeEvent(input$updatemapnei,
+                 print(input$pollutantnei)
+    )
+    observeEvent(input$updatemapnei,
+                 print(str(data()))
     )
     # observeEvent(input$updatemapnei,
     #              print(class(generate_neimap(
