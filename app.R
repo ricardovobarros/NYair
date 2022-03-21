@@ -1,49 +1,108 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
-
 library(shiny)
+library(bslib)
+source("utils.R")
+library(geojsonio)
+library(sp)
+library(broom)
+library(geosphere)
+library(plotly)
+library(rjson)
+library(shinycssloaders)
+library(readr)
+library(data.table)
+library(ggplot2)
+library(dplyr)
+library(stringr)
+library(gridExtra)
+library(scales)
+library(pivottabler)
+library(tidyr)
 
-# Define UI for application that draws a histogram
-ui <- fluidPage(
+# get data from git 
+# data = read.csv("https://raw.githubusercontent.com/ricardovobarros/NYair/main/ny_pollutants.csv")
 
-    # Application title
-    titlePanel("Old Faithful Geyser Data"),
 
-    # Sidebar with a slider input for number of bins 
-    sidebarLayout(
-        sidebarPanel(
-            sliderInput("bins",
-                        "Number of bins:",
-                        min = 1,
-                        max = 50,
-                        value = 30)
-        ),
+# display loading settings
+options(spinner.color="#0275D8", spinner.color.background="#ffffff", spinner.size=2)
 
-        # Show a plot of the generated distribution
-        mainPanel(
-           plotOutput("distPlot")
-        )
-    )
-)
+# application UI 
+ui <- fluidPage(theme = bs_theme(bootswatch = "darkly"),
+                navbarPage("NYair",
+                           tabPanel("Neighborhood Map",
+                                    wellPanel("Input Panel",
+                                              dateRangeInput("datarangenei",
+                                                             "Date Range"
+                                              ),
+                                              selectInput("poluttantnei",
+                                                          "Pollutant",
+                                                          c("Carbon Monoxide" = "co",
+                                                            "Ozone" = "o3",
+                                                            "Nitrogen dioxide"= "no2",
+                                                            "Sulfur dioxide" = "so2")
+                                              ),
+                                              actionButton("updatemapnei",
+                                                           "Update map"
+                                              )
+                                                                  
+                                    ),
+                      
+                                    withSpinner(plotlyOutput("neimap"),
+                                                type=1
+                                    )
+                          
+                            )))
+                           
+                    
+                
+
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
+  
+  #generate neimap
+  df = reactive({
+    data.frame(read_csv("ny_pollutants.csv",  show_col_types = FALSE))
+  })
+  
+  neimap = reactive({
+    generate_neimap(df())
+  })
 
-    output$distPlot <- renderPlot({
-        # generate bins based on input$bins from ui.R
-        x    <- faithful[, 2]
-        bins <- seq(min(x), max(x), length.out = input$bins + 1)
 
-        # draw the histogram with the specified number of bins
-        hist(x, breaks = bins, col = 'darkgray', border = 'white')
+  # generate neighbor map
+  output$neimap = renderPlotly({
+    if (input$updatemapnei>0) { 
+      isolate(neimap()) 
+    } 
+    # generate_neimap(
+    #   data,
+    #   isolate(input$datarangenei),
+    #   isolate(input$poluttantnei),
+    #   input$updatemapnei,
+    #   
+    # )
     })
-}
+  
+    observeEvent(input$updatemapnei,
+                 print(input$datarangenei)
+    )
+    observeEvent(input$updatemapnei,
+                 print(input$datarangenei[1])
+    )
+    observeEvent(input$updatemapnei,
+                 print(input$poluttantnei)
+    )
+    # observeEvent(input$updatemapnei,
+    #              print(class(generate_neimap(
+    #                data,
+    #                isolate(input$datarangenei),
+    #                isolate(input$poluttantnei),
+    #                input$updatemapnei,
+    #                
+    #              ))))
+    # 
 
+
+}
 # Run the application 
 shinyApp(ui = ui, server = server)

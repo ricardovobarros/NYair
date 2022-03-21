@@ -550,12 +550,13 @@ df_tmp$pop = paste0( "<img src='C:/Users/ricar/nyair/img/co/",
        
 
 map = leaflet(data=df_tmp) %>%
-  addTiles() %>%
+  addProviderTiles(providers$Stamen.Toner) %>% 
+  # addTiles() %>%
   setView(-73.93,  40.81, zoom=10) %>%
   addMarkers(~lon,  ~lat, popup= ~pop)
 
 htmlwidgets::saveWidget(map, "maps/co_analyse.html")
-map
+
 
   
 ```
@@ -616,8 +617,6 @@ end_time = "2000-01-01"
 # filter concentration of CO each site in a time period 
 df_time = data %>%   filter(parameter_name == "Carbon monoxide [ppm]") %>%  filter(date_local > start_time) %>% filter (date_local < end_time) %>% subset(select =
                                                                                                                                                             -c(date_local, parameter_name, latitude, longitude)) %>% group_by(site_num) %>% summarise(conc_mean = mean(concentration))
-
-# com
 
 # compute distance from every site to neighborhoods centers
 n_sites = length(df_sites$site_num)
@@ -684,6 +683,7 @@ map_pol <- map_pol %>% add_trace(
                paste0("nearst monitor:", nearst," [km]"),
                sep="<br>"),
     type="choroplethmapbox",
+    showlegend = TRUE,
     geojson=spdf2,
     locations=all_con$ID,
     z=format(round(all_con$conc, 2), nsmall=2),
@@ -697,18 +697,19 @@ map_pol <- map_pol %>% add_trace(
   )
 
 # create layout 
-map_pol <- map_pol %>% layout(title = "bababbaba",
-  mapbox = list(
-    style = "carto-positron",
-    title = "NY neighborhhods CO relative concentrarion ",
-    zoom = 9,
-    center = list(lon = -73.9, lat = 40.8)
-  )
-) %>%  config(displayModeBar = F) %>%  colorbar(title = "CO [ppm]")
+map_pol <-
+  map_pol %>% layout(
+    title = "NY neighborhoods CO concentrarion in ppm",
+    mapbox = list(
+      style = "carto-positron",
+      zoom = 9,
+      center = list(lon = -73.9, lat = 40.8)
+    )
+  ) %>%  config(displayModeBar = F) %>%  colorbar(title = "CO [ppm]")
 
   
   
-htmlwidgets::saveWidget(map_pol, "maps/relative_pollution2.html")
+# htmlwidgets::saveWidget(map_pol, "maps/relative_pollution2.html")
 map_pol
 
 ```
