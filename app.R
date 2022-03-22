@@ -17,6 +17,7 @@ library(gridExtra)
 library(scales)
 library(pivottabler)
 library(tidyr)
+library(leaflet)
 
 # get data from git 
 # data = read.csv("https://raw.githubusercontent.com/ricardovobarros/NYair/main/ny_pollutants.csv")
@@ -27,35 +28,63 @@ options(spinner.color="#0275D8", spinner.color.background="#ffffff", spinner.siz
 
 # application UI 
 ui <- fluidPage(theme = bs_theme(bootswatch = "darkly"),
-                navbarPage("NYair",
-                           tabPanel("Neighborhood Map",
-                                    wellPanel("Input Panel",
-                                              dateRangeInput("daterangenei",
-                                                             "Date Range",
-                                                             start="1990-01-01",
-                                                             end="2020-01-01",
-                                                             max="2020-01-01",
-                                                             min="1990-01-01",
-                                                             startview = "decade"
-                                              ),
-                                              selectInput("pollutantnei",
-                                                          "Pollutant",
-                                                          c("Carbon Monoxide [ppm]" = "co",
-                                                            "Ozone [ppm]" = "o3",
-                                                            "Nitrogen dioxide [ppb]"= "no2",
-                                                            "Sulfur dioxide [ppb]" = "so2")
-                                              ),
-                                              actionButton("updatemapnei",
-                                                           "Update map"
-                                              )
-                                                                  
-                                    ),
+                navbarPage(
+                  "NYair",
+                  tabPanel(
+                    "Neighborhood Map",
+                    wellPanel(
+                      "Input Panel",
+                      dateRangeInput(
+                        "daterangenei",
+                        "Date Range",
+                        start = "1990-01-01",
+                        end = "2020-01-01",
+                        max = "2020-01-01",
+                        min = "1990-01-01",
+                        startview = "decade"
+                      ),
+                      selectInput(
+                        "pollutantnei",
+                        "Pollutant",
+                        c(
+                          "Carbon Monoxide [ppm]" = "co",
+                          "Ozone [ppm]" = "o3",
+                          "Nitrogen dioxide [ppb]" = "no2",
+                          "Sulfur dioxide [ppb]" = "so2"
+                        )
+                      ),
+                      actionButton("updatemapnei",
+                                   "Update map")
                       
-                                    withSpinner(plotlyOutput("neimap"),
-                                                type=1
-                                    )
-                          
-                            )))
+                    ),
+                    
+                    withSpinner(plotlyOutput("neimap"),
+                                type = 1)
+                    
+                  ),
+                  tabPanel(
+                    "Monitors Map",
+                    wellPanel(
+                      "Input Panel",
+                      selectInput(
+                        "pollutantmon",
+                        "Pollutant",
+                        c(
+                          "Carbon Monoxide [ppm]" = "co",
+                          "Ozone [ppm]" = "o3",
+                          "Nitrogen dioxide [ppb]" = "no2",
+                          "Sulfur dioxide [ppb]" = "so2"
+                        )
+                      
+                    ),
+                    actionButton("updatemapmon",
+                                 "Update map")
+                    
+                  ),
+                  withSpinner(leafletOutput("monmap"),
+                              type = 1)
+
+                )))
                            
                     
                 
@@ -78,7 +107,29 @@ server <- function(input, output) {
                               input$pollutantnei
                               )
               ) 
-    } 
+    }
+  })
+  
+    # generate monitors map
+    output$monmap = renderLeaflet({
+      if (input$updatemapmon>0) {
+        isolate(generate_monmap(df(),
+                                input$pollutantmon
+               )
+        )
+      }
+
+    })
+    
+    # # generate monitors map
+    # output$monmap = renderUI({
+    #     includeHTML("maps/ozone_analyse.html")
+    # 
+    #   
+    # })
+    # 
+    
+    #-------------------- print stuff
     # generate_neimap(
     #   data,
     #   isolate(input$datarangenei),
@@ -86,7 +137,7 @@ server <- function(input, output) {
     #   input$updatemapnei,
     #   
     # )
-    })
+
   
     observeEvent(input$updatemapnei,
                  print(input$daterangenei)
@@ -97,8 +148,8 @@ server <- function(input, output) {
     observeEvent(input$updatemapnei,
                  print(input$daterangenei[2])
     )
-    observeEvent(input$updatemapnei,
-                 print(input$pollutantnei)
+    observeEvent(input$updatemapmon,
+                 print(input$pollutantmon)
     )
     observeEvent(input$updatemapnei,
                  print(str(data()))

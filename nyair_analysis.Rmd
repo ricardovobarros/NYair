@@ -73,7 +73,7 @@ for (column in unique(data$parameter_name)) {
 }
 print(samples_fr)
 
-# change parameters names
+# change parameters names =D 
 data["parameter_name"][data["parameter_name"] == "Nitrogen dioxide (NO2)"] = "Nitrogen dioxide [ppb]"
 data["parameter_name"][data["parameter_name"] == "Carbon monoxide"] = "Carbon monoxide [ppm]"
 data["parameter_name"][data["parameter_name"] == "Ozone"] = "Ozone [ppm]"
@@ -550,12 +550,13 @@ df_tmp$pop = paste0( "<img src='C:/Users/ricar/nyair/img/co/",
        
 
 map = leaflet(data=df_tmp) %>%
-  addProviderTiles(providers$Stamen.Toner) %>% 
-  # addTiles() %>%
+  # addProviderTiles(providers$Stamen.Toner) %>% 
+  addTiles() %>%
   setView(-73.93,  40.81, zoom=10) %>%
   addMarkers(~lon,  ~lat, popup= ~pop)
 
-htmlwidgets::saveWidget(map, "maps/co_analyse.html")
+htmlwidgets::saveWidget(map, "maps/co_analyse3.html")
+map
 
 
   

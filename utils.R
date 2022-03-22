@@ -1,4 +1,38 @@
+generate_monmap = function(data, pollutant,...){
+  
+  # # temp code
+  # pollutant = "Carbon monoxide"
+  # print(unique(data$parameter_name))
+  
+  # create data frame with the lat, lon, and pop-up info 
+  df_tmp = data %>% filter(parameter_name==pollutant) %>% 
+    subset(select=-c(date_local, parameter_name, concentration)) %>% 
+    group_by(site_num) %>% summarise(lat = mean(latitude), lon = mean(longitude))
+  
+ 
+  
+  # new column wiht html img and text
+  df_tmp$pop =  paste0( "<img src='https://raw.githubusercontent.com/ricardovobarros/NYair/main/img/co/",
+    df_tmp$site_num,
+    "_co.jpeg", "' />")
+    
+    
+    # paste0( "<img src='C:/Users/ricar/nyair/img/co/",
+    # df_tmp$site_num,
+    # "_co.jpeg", "' />")
+    # #paste0("something here")
+  
 
+
+  
+  map = leaflet(data=df_tmp) %>%
+    addProviderTiles(providers$Stamen.Toner,
+                     options = providerTileOptions(noWrap = TRUE)) %>% 
+    setView(-73.93,  40.81, zoom=10) %>%
+    addCircleMarkers(~lon,  ~lat, popup= ~pop)
+  # map
+  return(map)
+}
 
 
 generate_neimap = function(data, date, pollutant,...){
