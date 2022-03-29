@@ -1,3 +1,20 @@
+---
+title: "about"
+author: "eu"
+date: '2022-03-29'
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(mathjaxr)
+```
+
+div {
+  text-align: justify;
+  text-justify: inter-word;
+}
 
 # NYair
 NYair is an [open source]() web application written in R that provides a big picture over the air quality
@@ -16,25 +33,35 @@ The monitors that measure the air quality in New York are scattered through the 
 
 Neighborhood Map computes the concentration a weighted average of a pollutant within a time slot given by the user. The weight is a function of the distance _d_ between the center of a neighborhood and the monitors (See equation below).
 
-$weight(d) = 1 : if (d<500m)$ <br/>
-and <br/>
-$weight(d) = e^(d/500)*ln(0.5) : if (d>500m)$ <br/>
-
-\(x=y\)
+<b><center>weight(d) = 1 : if (d<500m)</center></b><br/>
+<b><center>and</center></b> <br/>
+<b><center>weight(d) = e^(d/500*ln[0.5]) : if (d>500m)</center></b> <br/>
 
 
 where d is the vector distance between a neighborhood and the monitors, and weight(d) is the weight vector.
 
 The weight function assumes that monitors within 500 meters radius have high influence in defining the pollutant concentration of a neighborhood (weight equals one). In addition, the monitors outside this radius have exponential decay function beginning with 50% (see figure below).
 
-__Image of the graph__
+```{r, echo=FALSE}
+library(ggplot2)
+log1plusx <- function(x) 1
+self <- function(x) exp((x / 500) * log(0.5, base = exp(1)))
+plot.range1 <- data.frame(x=c(0, 500), Functions = factor(1))
+plot.range2 <- data.frame(x=c(500, 4000), Functions = factor(2))
 
-finally, the concentration can be computed through the weighted average (see equation below).
+fig = ggplot(data.frame(0:4000), aes(x=x,y=0:1, colour=Functions)) +
+  labs(title="Distance Weight Function", x="Distance (d)", y="Weight") +
+  stat_function(data = plot.range2, fun = self, xlim=c(500, 4000)) +
+  stat_function(data = plot.range1, fun = log1plusx, xlim=c(0, 500)) +
+  scale_colour_manual(values = c("red", "green"), labels = c("if d<500m", "if d>500m")) 
 
-$$c_nei = Vec(weights)*Vec(c_me)/sum(weights)$$
+fig
+```
+Finally, the concentration can be computed through the weighted average (see equation below).
 
-where, c_nei is the estimated neighborhood concentration, and weights is the vectors of the 
-computed weights by the function $weight(d)$.
+<b><center>c_nei = weights*c_me/sum(weights)</center></b>
+
+where, c_nei is the estimated neighborhood concentration, and weights is the vectors contaning the weight each monitor.
 
 ### Monitors Map
 Monitors Map generates the yearly average and standard deviation of the concentration of given pollutant in a given monitor. The Map shows the pollutant measured between 1990 and 2020 against the monitors average concentration (i.e., city average). 

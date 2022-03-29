@@ -22,7 +22,6 @@ library(leaflet)
 # get data from git 
 # data = read.csv("https://raw.githubusercontent.com/ricardovobarros/NYair/main/ny_pollutants.csv")
 
-
 # display loading settings
 options(spinner.color="#0275D8", spinner.color.background="#ffffff", spinner.size=2)
 
@@ -90,15 +89,11 @@ ui <- fluidPage(
   tabPanel(
     "About",
     # titlePanel("About"),
-    includeMarkdown("about.md")
+    includeMarkdown("about.Rmd")
   ))
   
   
 )
-                           
-                    
-                
-
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
