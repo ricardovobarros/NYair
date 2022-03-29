@@ -1,7 +1,46 @@
-## write some Stuff here
-[google](https:\\google.com)
 
+# NYair
+NYair is an [open source]() web application written in R that provides a big picture over the air quality
+status in New York city between 1990 and 2020. The app provides two maps that summarize and estimate the   pollutants Carbon Monoxide (CO), Nitrogen Dioxide (NO2), Sulfur Dioxide (SO2), and Ozone (O3).
 
-+ list 1
-+ list 2
++ __Neighborhood Map__ displays the estimated average of a pollutant concentration within a given time frame. By hovering in the map, the user can spot the estimated average value of a pollutant in a neighborhood and the distance to the nearest air quality monitor. 
+
++ __Monitors Map__ displays the yearly average and standard deviation of a pollutant concentration of measurements taken by a monitor. The 25 monitors are scattered throughout New York and the measurements were taken between 1990 and 2020.  
+ 
+
+### Data source
+The United States Environmental Protection Agency (EPA) provides open annual summary data as well as hourly and daily data in the categories of criteria gases, particulates, meteorological, and toxics. Click [here](https://console.cloud.google.com/marketplace/product/epa/historical-air-quality?project=fiery-webbing-340301) to access the dataset.
+
+### Neighborhood Map
+The monitors that measure the air quality in New York are scattered through the city, but not all neighborhoods have a monitor nearby. To have a estimate of the concentration of a pollutant, in a neighborhood without a air monitor, the values of nearby monitors can be interpolated. The methods used to compute these estimates take into consideration the distances. The larger the distance between the location, in which the concentration will be estimated, and a reference monitor, the less reliable is the estimation. To increase accuracy, the measurements of more than one monitor can be used through, for example, a weighted average.
+
+Neighborhood Map computes the concentration a weighted average of a pollutant within a time slot given by the user. The weight is a function of the distance _d_ between the center of a neighborhood and the monitors (See equation below).
+
+$weight(d) = 1 ; if d<500m$
+and
+$weight(d) = e^(d/500)*ln(0.5) ; if d>500m$
+
+where d is the vector distance between a neighborhood and the monitors, and weight(d) is the weight vector.
+
+The weight function assumes that monitors within 500 meters radius have high influence in defining the pollutant concentration of a neighborhood (weight equals one). In addition, the monitors outside this radius have exponential decay function beginning with 50% (see figure below).
+
+__Image of the graph__
+
+finally, the concentration can be computed through the weighted average (see equation below).
+
+$c_nei = Vec(weights)*Vec(c_me)/sum(weights)$
+
+where, c_nei is the estimated neighborhood concentration, and weights is the vectors of the 
+computed weights by the function $weight(d)$.
+
+### Monitors Map
+Monitors Map generates the yearly average and standard deviation of the concentration of given pollutant in a given monitor. The Map shows the pollutant measured between 1990 and 2020 against the monitors average concentration (i.e., city average). 
+
+### Additional Information
+
++ [GitHub repository]()
++ [Detailed Report]()
+
+__ADD COPY RIGHT IN ALL THE PAGES__
+
 

@@ -9,12 +9,16 @@ generate_monmap = function(data, pollutant,...){
     subset(select=-c(date_local, parameter_name, concentration)) %>% 
     group_by(site_num) %>% summarise(lat = mean(latitude), lon = mean(longitude))
   
- 
   
   # new column wiht html img and text
-  df_tmp$pop =  paste0( "<img src='https://raw.githubusercontent.com/ricardovobarros/NYair/main/img/co/",
+  df_tmp$pop =  paste0(
+    "<img src='https://raw.githubusercontent.com/ricardovobarros/NYair/main/img/",
+    pollutant,
+    "/",
     df_tmp$site_num,
-    "_co.jpeg", "' />")
+    "_",pollutant,".jpeg",
+    "' />"
+  )
     
     
     # paste0( "<img src='C:/Users/ricar/nyair/img/co/",
@@ -44,13 +48,13 @@ generate_neimap = function(data, date, pollutant,...){
   start_time = date[1]
   end_time = date[2]
   
-  # filter concentration of CO each site in a time period <--------------------------
+  # filter concentration of CO each site in a time period 
   df_time = data %>%   filter(parameter_name == pollutant) %>% 
     filter(date_local > start_time) %>% filter (date_local < end_time) %>%
     subset(select =-c(date_local, parameter_name, latitude, longitude)) %>% 
     group_by(site_num) %>% summarise(conc_mean = mean(concentration))
   
-  # compute df sites <---------------------
+  # compute df sites 
   df_sites = data %>% subset(select=-c(concentration, date_local, parameter_name)) %>% 
     group_by(site_num) %>% summarise(lat= mean(latitude),lon = mean(longitude))
   

@@ -10,4 +10,6 @@ google_project/
 maps/
 .ipynb_checkpoints/
 nyair.Rproj
+nyair_analysis.Rmd
+
 

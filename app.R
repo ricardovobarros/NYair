@@ -27,64 +27,74 @@ library(leaflet)
 options(spinner.color="#0275D8", spinner.color.background="#ffffff", spinner.size=2)
 
 # application UI 
-ui <- fluidPage(theme = bs_theme(bootswatch = "darkly"),
-                navbarPage(
-                  "NYair",
-                  tabPanel(
-                    "Neighborhood Map",
-                    wellPanel(
-                      "Input Panel",
-                      dateRangeInput(
-                        "daterangenei",
-                        "Date Range",
-                        start = "1990-01-01",
-                        end = "2020-01-01",
-                        max = "2020-01-01",
-                        min = "1990-01-01",
-                        startview = "decade"
-                      ),
-                      selectInput(
-                        "pollutantnei",
-                        "Pollutant",
-                        c(
-                          "Carbon Monoxide [ppm]" = "co",
-                          "Ozone [ppm]" = "o3",
-                          "Nitrogen dioxide [ppb]" = "no2",
-                          "Sulfur dioxide [ppb]" = "so2"
-                        )
-                      ),
-                      actionButton("updatemapnei",
-                                   "Update map")
-                      
-                    ),
-                    
-                    withSpinner(plotlyOutput("neimap"),
-                                type = 1)
-                    
-                  ),
-                  tabPanel(
-                    "Monitors Map",
-                    wellPanel(
-                      "Input Panel",
-                      selectInput(
-                        "pollutantmon",
-                        "Pollutant",
-                        c(
-                          "Carbon Monoxide [ppm]" = "co",
-                          "Ozone [ppm]" = "o3",
-                          "Nitrogen dioxide [ppb]" = "no2",
-                          "Sulfur dioxide [ppb]" = "so2"
-                        )
-                      
-                    ),
-                    actionButton("updatemapmon",
-                                 "Update map")
-                    
-                  ),
-                  withSpinner(leafletOutput("monmap"),
-                              type = 1)
-
-                )))
+ui <- fluidPage(
+  theme = bs_theme(bootswatch = "darkly"),
+  navbarPage(
+    "NYair",
+    tabPanel(
+      "Neighborhood Map",
+      wellPanel(
+        "Input Panel",
+        dateRangeInput(
+          "daterangenei",
+          "Date Range",
+          start = "1990-01-01",
+          end = "2020-01-01",
+          max = "2020-01-01",
+          min = "1990-01-01",
+          startview = "decade"
+        ),
+        selectInput(
+          "pollutantnei",
+          "Pollutant",
+          c(
+            "Carbon Monoxide [ppm]" = "co",
+            "Ozone [ppm]" = "o3",
+            "Nitrogen dioxide [ppb]" = "no2",
+            "Sulfur dioxide [ppb]" = "so2"
+          )
+        ),
+        actionButton("updatemapnei",
+                     "Update map")
+        
+      ),
+      
+      withSpinner(plotlyOutput("neimap"),
+                  type = 1)
+      
+    ),
+    tabPanel(
+      "Monitors Map",
+      wellPanel(
+        "Input Panel",
+        selectInput(
+          "pollutantmon",
+          "Pollutant",
+          c(
+            "Carbon Monoxide [ppm]" = "co",
+            "Ozone [ppm]" = "o3",
+            "Nitrogen dioxide [ppb]" = "no2",
+            "Sulfur dioxide [ppb]" = "so2"
+          )
+          
+        ),
+        actionButton("updatemapmon",
+                     "Update map")
+        
+      ),
+      withSpinner(leafletOutput("monmap"),
+                  type = 1)
+      
+    
+  ),
+  tabPanel(
+    "About",
+    # titlePanel("About"),
+    includeMarkdown("about.md")
+  ))
+  
+  
+)
                            
                     
                 
