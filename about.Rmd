@@ -6,10 +6,6 @@ output: html_document
 runtime: shiny
 ---
 
-```{r setup, include=FALSE, echo=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-library(mathjaxr)
-```
 
 div {
   text-align: justify;
@@ -42,21 +38,8 @@ where d is the vector distance between a neighborhood and the monitors, and weig
 
 The weight function assumes that monitors within 500 meters radius have high influence in defining the pollutant concentration of a neighborhood (weight equals one). In addition, the monitors outside this radius have exponential decay function beginning with 50% (see figure below).
 
-```{r, echo=FALSE}
-library(ggplot2)
-log1plusx <- function(x) 1
-self <- function(x) exp((x / 500) * log(0.5, base = exp(1)))
-plot.range1 <- data.frame(x=c(0, 500), Functions = factor(1))
-plot.range2 <- data.frame(x=c(500, 4000), Functions = factor(2))
+<center><img src="https://raw.githubusercontent.com/ricardovobarros/NYair/main/img/graph/weight_function.jpeg" alt="weight function" class="center"></center>
 
-fig = ggplot(data.frame(0:4000), aes(x=x,y=0:1, colour=Functions)) +
-  labs(title="Distance Weight Function", x="Distance (d)", y="Weight") +
-  stat_function(data = plot.range2, fun = self, xlim=c(500, 4000)) +
-  stat_function(data = plot.range1, fun = log1plusx, xlim=c(0, 500)) +
-  scale_colour_manual(values = c("red", "green"), labels = c("if d<500m", "if d>500m")) 
-
-fig
-```
 Finally, the concentration can be computed through the weighted average (see equation below).
 
 <b><center>c_nei = weights*c_me/sum(weights)</center></b>

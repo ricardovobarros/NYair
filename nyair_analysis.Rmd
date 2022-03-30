@@ -2,7 +2,9 @@
 title: "NYair analysis"
 author: "Ricardo Barros"
 date: "2/24/2022"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 ```{r libraries, echo=FALSE, include=FALSE}
 library(readr)
@@ -40,7 +42,7 @@ See also [sql_code](https://github.com/ricardovobarros/NYair) file to see how th
 
 
 ## Data Processing
-####Looking into the first row:
+#### Looking into the first row:
 
 
 ```{r cars, echo=FALSE}
@@ -231,7 +233,6 @@ corrplot(cor(df_wide), method="color", col=col(200),
 ```
 
 ```{r, echo=FALSE, include=FALSE}
-options(warn=-1)
 # group mean concentration by month
 df_site = df_year %>% subset(select=-c(date_local,latitude,longitude)) %>% group_by(parameter_name, site_num, year, month) %>% summarise(conc=mean(concentration))
 
@@ -293,14 +294,14 @@ for (site in sites) {
     # save pot in a list
     plot_list_ozone = c(plot_list_ozone, list(plot_ozone))
     
-    # save image
-    ggsave(paste0("img/ozone/", site, "_ozone.png"),
-            dpi = 100,
-            width = 6,
-            height = 5,
-            units = "in",
-            scale = 0.5
-           )
+  #   # save image
+  #   ggsave(paste0("img/ozone/", site, "_ozone.png"),
+  #           dpi = 100,
+  #           width = 6,
+  #           height = 5,
+  #           units = "in",
+  #           scale = 0.5
+  #          )
   }}
   
 # CARBON DIOXIDE
@@ -336,14 +337,14 @@ for(site in sites) {
     #save plot in a list
     plot_list_co = c(plot_list_co, list(plot_co))
     # save image
-    ggsave(
-      paste("img/co/", site, "_co.jpeg", sep = ""),
-      dpi = 100,
-      width = 6,
-      height = 5,
-      units = "in",
-      scale = 0.5
-    )
+#     ggsave(
+#       paste("img/co/", site, "_co.jpeg", sep = ""),
+#       dpi = 100,
+#       width = 6,
+#       height = 5,
+#       units = "in",
+#       scale = 0.5
+#     )
   }
 }
 
@@ -382,14 +383,14 @@ for(site in sites) {
     #save plot in a list
     plot_list_so2 = c(plot_list_so2, list(plot_so2))
     # save image
-    ggsave(
-      paste("img/sulfur/", site, "_so2.jpeg", sep = ""),
-      dpi = 100,
-      width = 6,
-      height = 5,
-      units = "in",
-      scale = 0.5
-    )
+#     ggsave(
+#       paste("img/sulfur/", site, "_so2.jpeg", sep = ""),
+#       dpi = 100,
+#       width = 6,
+#       height = 5,
+#       units = "in",
+#       scale = 0.5
+#     )
   }
 }
 
@@ -430,15 +431,15 @@ for(site in sites) {
     
     #save plot in a list
     plot_list_no2 = c(plot_list_no2, list(plot_no2))
-    # save image
-    ggsave(
-      paste("img/nitro/", site, "_no2.jpeg", sep = ""),
-      dpi = 100,
-      width = 6,
-      height = 5,
-      units = "in",
-      scale = 0.5
-    )
+#     # save image
+#     ggsave(
+#       paste("img/nitro/", site, "_no2.jpeg", sep = ""),
+#       dpi = 100,
+#       width = 6,
+#       height = 5,
+#       units = "in",
+#       scale = 0.5
+#     )
   }
 }
 
@@ -450,7 +451,6 @@ for(site in sites) {
 + Neighborhoods Financial District and Latourette Park measure consistently higher concentration of ozone than the city average. 
 + The oposite is observed for the neighborhoods Bronx Park and Flatiron.
 ```{r, echo=FALSE}
-options(warn=-1)
 # show the average and std of ozone concentration
 # of four sites again trend of the mean of all sites
 do.call("grid.arrange", c(plot_list_ozone[c(14,15,1,2)], ncol=2, top="O3 Anual Average and Standard Deviation in Four Neighborhoods"))
@@ -460,7 +460,7 @@ do.call("grid.arrange", c(plot_list_ozone[c(14,15,1,2)], ncol=2, top="O3 Anual A
 + Neighborhoods Tribeca and Downtown Brooklyn measure slightly higher concentration of CO than the city average. 
 + The oposite is observed for the neighborhoods Midtown and Bronx Park.
 ```{r, echo=FALSE}
-options(warn=-1)
+
 # show the average and std of co concentration
 # of four sites again trend of the mean of all sites
 do.call("grid.arrange", c(plot_list_co[c(3,4,5,9)], ncol=2, top="CO Anual Average and Standard Deviation in Four Neighborhoods"))
@@ -474,7 +474,7 @@ do.call("grid.arrange", c(plot_list_co[c(3,4,5,9)], ncol=2, top="CO Anual Averag
 + The monitor located in Longwood detected SO2 concentrations around average. Around the year 2000 SO2 yearly average crosses downwards the city  average.
 + The City Average decreasing trend may be biased because the monitors with historical data from the 90s to middle 2000s are different than the one that have historical data from middle 2000s on wards. However, the trends of monitors separately have a downward trend.  
 ```{r, echo=FALSE}
-options(warn=-1)
+
 # show the average and std of co concentration
 # of four sites again trend of the mean of all sites
 do.call("grid.arrange", c(plot_list_so2[c(2,1,6,11)], ncol=2, top="SO2 Anual Average and Standard Deviation in Four Neighborhoods"))
@@ -501,8 +501,8 @@ do.call("grid.arrange", c(plot_list_no2[c(2,1,5,4)], ncol=2, top=" NO2 Anual Ave
 
 ## Geospatial Visualization
 #### Air quality monitors across NY
-```{r, echo=FALSE, warning=FALSE}
-options(warn=-1)
+```{r, echo=FALSE, warning=FALSE, include=FALSE}
+
 
 library(plotly)
 
@@ -528,7 +528,8 @@ fig <- fig %>%
 htmlwidgets::saveWidget(fig, "maps/ny_sites.html")
 ```
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, warning=FALSE}
+ 
 fig 
 ```
 
@@ -540,20 +541,23 @@ library(leaflet)
 # create data frame with the lat, lon, and pop-up info 
 df_tmp = data %>% filter(parameter_name=="Carbon monoxide [ppm]") %>% subset(select=-c(date_local, parameter_name, concentration)) %>% group_by(site_num) %>% summarise(lat = mean(latitude), lon = mean(longitude))
 
-# new column wiht html img and text
-df_tmp$pop = paste0( "<img src='C:/Users/ricar/nyair/img/co/",
-                            df_tmp$site_num,
-                            "_co.jpeg", "' />"
-                     )
+  df_tmp$pop =  paste0(
+    "<img src='https://raw.githubusercontent.com/ricardovobarros/NYair/main/img/",
+    "co",
+    "/",
+    df_tmp$site_num,
+    "_","co",".jpeg",
+    "' />"
+  )
 
                    
        
 
 map = leaflet(data=df_tmp) %>%
-  # addProviderTiles(providers$Stamen.Toner) %>% 
-  addTiles() %>%
+  addProviderTiles(providers$Stamen.Toner) %>%
+  # addTiles() %>%
   setView(-73.93,  40.81, zoom=10) %>%
-  addMarkers(~lon,  ~lat, popup= ~pop)
+   addCircleMarkers(~lon,  ~lat, popup= ~pop)
 
 htmlwidgets::saveWidget(map, "maps/co_analyse3.html")
 map
@@ -572,7 +576,7 @@ Looking to the [Choropleth](https://en.wikipedia.org/wiki/Choropleth_map#:~:text
 + Manhattan and proximity have the highest values of CO on average between 1990 and 2000.
 + Neighborhoods near to the cost (most southern) have on average the lowest concentrations of CO.
 
-```{r echo=FALSE, warning=FALSE}
+```{r echo=FALSE, warning=FALSE, include=FALSE}
 
 library(geojsonio)
 library(sp)
@@ -711,14 +715,14 @@ map_pol <-
   
   
 # htmlwidgets::saveWidget(map_pol, "maps/relative_pollution2.html")
-map_pol
 
 ```
 
-## Conclusion
+```{r, echo=FALSE}
+map_pol
+```
 
 
-## Suggestions
 
 
 
