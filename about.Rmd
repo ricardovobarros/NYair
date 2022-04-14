@@ -50,7 +50,7 @@ The map of monitors shows the annual average and standard deviation of the conce
 ### Additional Information
 
 + [GitHub repository](https://github.com/ricardovobarros/NYair)
-+ [Detailed Report](https://github.com/ricardovobarros/NYair/blob/main/nyair_analysis.html)
++ [Detailed Report](https://github.com/ricardovobarros/NYair/blob/main/nyair_analysis.pdf)
 + [SQL code](https://github.com/ricardovobarros/NYair/blob/main/sql_code.md)
 + [Ricardo Barros Portifolio](https://ricardovobarros.github.io/)
 
