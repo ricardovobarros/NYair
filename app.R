@@ -126,48 +126,12 @@ server <- function(input, output) {
 
     })
     
-    # # generate monitors map
-    # output$monmap = renderUI({
-    #     includeHTML("maps/ozone_analyse.html")
-    # 
-    #   
+    # # read report
+    # output$report = renderUI({
+    #     includeHTML("nyair_analysis.html")
     # })
-    # 
     
-    #-------------------- print stuff
-    # generate_neimap(
-    #   data,
-    #   isolate(input$datarangenei),
-    #   isolate(input$poluttantnei),
-    #   input$updatemapnei,
-    #   
-    # )
-
-  
-    observeEvent(input$updatemapnei,
-                 print(input$daterangenei)
-    )
-    observeEvent(input$updatemapnei,
-                 print(input$daterangenei[1])
-    )
-    observeEvent(input$updatemapnei,
-                 print(input$daterangenei[2])
-    )
-    observeEvent(input$updatemapmon,
-                 print(input$pollutantmon)
-    )
-    observeEvent(input$updatemapnei,
-                 print(str(data()))
-    )
-    # observeEvent(input$updatemapnei,
-    #              print(class(generate_neimap(
-    #                data,
-    #                isolate(input$datarangenei),
-    #                isolate(input$poluttantnei),
-    #                input$updatemapnei,
-    #                
-    #              ))))
-    # 
+   
 
 
 }
