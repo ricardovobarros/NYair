@@ -11,5 +11,6 @@ maps/
 .ipynb_checkpoints/
 nyair.Rproj
 nyair_analysis.Rmd
+nyair_analysis_files/
 
 

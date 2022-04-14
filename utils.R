@@ -29,7 +29,7 @@ generate_monmap = function(data, pollutant,...){
 
 
   
-  map = leaflet(data=df_tmp) %>%
+  map = leaflet(data=df_tmp, width = "100%", height = "100%") %>%
     addProviderTiles(providers$Stamen.Toner,
                      options = providerTileOptions(noWrap = TRUE)) %>% 
     setView(-73.93,  40.81, zoom=10) %>%
